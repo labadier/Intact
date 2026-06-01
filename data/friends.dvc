@@ -1,6 +1,6 @@
 outs:
-- md5: f2ec9162018a58410e15453a17ffdb1e.dir
-  size: 311882
-  nfiles: 3
+- md5: b0fdfce71e86234584fd266ffb638a5a.dir
+  size: 566228
+  nfiles: 4
   hash: md5
   path: friends

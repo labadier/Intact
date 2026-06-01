@@ -1,0 +1,52 @@
+vars:
+  - co1:
+      data: data/friends/co1
+  - co2:
+      data: data/friends/co2
+
+stages:
+  extract-chunks-c1:
+    cmd:
+      - python scripts/extract_chunks.py
+        --data_path ${co1.data}
+        --output_path output/co1
+    deps:
+      - scripts/extract_chunks.py
+      - ${co1.data}
+    outs:
+      - output/co1/chunks.json
+
+  extract-chunks-c2:
+    cmd:
+      - python scripts/extract_chunks.py
+        --data_path ${co2.data}
+        --output_path output/co2
+    deps:
+      - scripts/extract_chunks.py
+      - ${co2.data}
+    outs:
+      - output/co2/chunks.json
+
+  create-index-c1:
+    cmd:
+      - python scripts/create_index.py
+        --chunks_path output/co1/chunks.json
+        --output_path output/co1/index
+        --collection_name c1_index
+    deps:
+      - scripts/create_index.py
+      - output/co1/chunks.json
+    outs:
+      - output/co1/index
+
+  create-index-c2:
+    cmd:
+      - python scripts/create_index.py
+        --chunks_path output/co2/chunks.json
+        --output_path output/co2/index
+        --collection_name c2_index
+    deps:
+      - scripts/create_index.py
+      - output/co2/chunks.json
+    outs:
+      - output/co2/index

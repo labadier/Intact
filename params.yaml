@@ -1,0 +1,9 @@
+models:
+  search:
+    name: "Qwen/Qwen3-Embedding-0.6B"
+    prompts:
+      chunk: "document"
+      query: "query"
+    max_seq_length: 1024
+    m: 12
+    ef_construction: 400
