@@ -1,0 +1,6 @@
+[core]
+    no_scm = True
+    remote = origin
+
+[remote "origin"]
+    url = ssh://rlabadie@neuronalresearch.media.fhstp.ac.at:/home/rlabadie/jde-storage-dvc
