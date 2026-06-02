@@ -23,9 +23,3 @@ Output:
 
 Answer:
 <answer with inline citations>
-
-Context:
-{context}
-
-Question:
-{question}

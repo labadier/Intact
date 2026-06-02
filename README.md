@@ -31,7 +31,7 @@ This repository contains a document question-answering project built around a RA
 ## Requirements
 
 - Python 3.11 or newer
-- `uv` for dependency management, or `pip` with `requirements.txt`
+- `uv` for dependency management
 - DVC, including the SSH remote support used by this project
 - An OpenAI-compatible API key for answer generation
 
@@ -43,14 +43,6 @@ Install dependencies with `uv`:
 
 ```bash
 uv sync
-```
-
-Or install from `requirements.txt`:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 Configure the chat model provider:
@@ -192,6 +184,8 @@ Important configuration files and environment variables:
 - The evaluation is not covered in this example, but it would be one of the first areas I would address in as a next step. For the retrieval component, I would start by creating relevance annotations between questions and supporting evidence spans. Since obtaining high-quality labels is expensive, an initial approach could rely on synthetic data generation. Rather than starting from questions, I would generate candidate questions from document chunks and treat the originating chunks as silver-label evidence. This would provide a scalable way to asses retrieval quality, compare retrieval strategies, and create the basis for a potential human annotation round. Ultimately, once an evaluation set is generated we could use the aggregation (or not :) of different LLM families to provide a more robust evaluation when it comes to an evaluation set.
 
 - Beyond the retrieval performance at the level of queries, it would be usefull to check how the coverage intra-business is, in this case it can be more challenging to obtain a really good discriminative representation of the chunks embeddings and therefore, relevant chunks can be dominated by non-relevant ones. Also, a groundth truth is necessary on the facts required by the generated answers.
+
+- Aditionally DVC was introduced to keep track of the inprovements based on the metrics designed from the two previous points.
 
 - I introduced here the `unstructured` library for parsing because it offers capabilities of OCR-ing tables, extracting images and this paves the way for a next iteration where we make better use of the tables in the documents, since at this point they are just considered as regular text in lines. 
 
