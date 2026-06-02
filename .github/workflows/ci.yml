@@ -48,7 +48,8 @@ jobs:
   dvc:
     name: DVC status
     runs-on: ubuntu-latest
-    continue-on-error: true
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    continue-on-error: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,7 +68,30 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups --frozen
 
-      - name: Check DVC status
+      - name: Configure SSH for DVC remote
+        env:
+          DVC_SSH_PRIVATE_KEY: ${{ secrets.DVC_SSH_PRIVATE_KEY }}
+          DVC_SSH_KNOWN_HOSTS: ${{ secrets.DVC_SSH_KNOWN_HOSTS }}
+          DVC_SSH_HOST: ${{ secrets.DVC_SSH_HOST }}
+        run: |
+          test -n "$DVC_SSH_PRIVATE_KEY" || (echo "Missing DVC_SSH_PRIVATE_KEY secret"; exit 1)
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DVC_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          if [ -n "$DVC_SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DVC_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          elif [ -n "$DVC_SSH_HOST" ]; then
+            ssh-keyscan -H "$DVC_SSH_HOST" >> ~/.ssh/known_hosts
+          else
+            echo "Missing DVC_SSH_KNOWN_HOSTS or DVC_SSH_HOST secret"
+            exit 1
+          fi
+
+      - name: Pull DVC data
+        run: uv run dvc pull
+
+      - name: Check DVC pipeline status
         run: |
           uv run dvc status > dvc_status.txt
           grep -q "Data and pipelines are up to date." dvc_status.txt || (cat dvc_status.txt; exit 1)
