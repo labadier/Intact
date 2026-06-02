@@ -82,7 +82,7 @@ class ChatManager:
         try:
             embedding_function = HuggingFaceEmbeddings(
                 model_name=model_name,
-                multi_process=True,
+                multi_process=False,
                 show_progress=True,
                 query_encode_kwargs={"normalize_embeddings": True, "prompt_name": prompts["query"]},
                 encode_kwargs={"normalize_embeddings": True, "prompt_name": prompts["chunk"]},

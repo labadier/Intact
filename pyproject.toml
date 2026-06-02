@@ -18,9 +18,24 @@ dependencies = [
     "pdfminer-six>=20260107",
     "pyyaml>=6.0.3",
     "sentence-transformers>=5.5.1",
+    "torch>=2.12.0",
+    "torchvision>=0.27.0",
     "unstructured[pdf]>=0.22.31",
     "uvicorn>=0.48.0",
 ]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [dependency-groups]
 dev = [

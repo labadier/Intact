@@ -54,7 +54,7 @@ stages:
     outs:
     - path: output/co1/index
       hash: md5
-      md5: 076a5b3ec7efc3c1ed95a8ec3a922ab0.dir
+      md5: eef72c6e53eb0b398ff1ae8fec4f00e6.dir
       size: 1714340
       nfiles: 5
   create-index-c2:
@@ -73,6 +73,6 @@ stages:
     outs:
     - path: output/co2/index
       hash: md5
-      md5: 29610381f919b5ca8916031dd37f930c.dir
+      md5: 2609141b3ac7d5513a09376ab24185c4.dir
       size: 1067172
       nfiles: 5

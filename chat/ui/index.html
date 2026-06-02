@@ -305,7 +305,7 @@
       label.className = "searching";
       loader.className = "loader";
       loader.setAttribute("aria-hidden", "true");
-      label.textContent = "Searching data";
+      label.textContent = "Searching for data";
       label.appendChild(loader);
       node.appendChild(label);
 
@@ -314,7 +314,7 @@
 
     function renderAnswer(answer, text) {
       answer.textContent = "";
-      const citationPattern = /<doc(\d+)>/g;
+      const citationPattern = /<doc\d+(?:\s*,\s*(?:doc)?\d+)*>/g;
       let cursor = 0;
       let match;
 
@@ -323,15 +323,21 @@
           answer.appendChild(document.createTextNode(text.slice(cursor, match.index)));
         }
 
-        const index = Number(match[1]);
-        const citation = document.createElement("button");
-        citation.className = "citation";
-        citation.type = "button";
-        citation.textContent = `[${index}]`;
-        citation.dataset.index = String(index);
-        citation.disabled = !answer.chunks.has(index);
-        citation.addEventListener("click", () => showChunk(index, answer.chunks));
-        answer.appendChild(citation);
+        const indexes = [...match[0].matchAll(/(?:doc)?(\d+)/g)].map((item) => Number(item[1]));
+        indexes.forEach((index, citationIndex) => {
+          if (citationIndex > 0) {
+            answer.appendChild(document.createTextNode(" "));
+          }
+
+          const citation = document.createElement("button");
+          citation.className = "citation";
+          citation.type = "button";
+          citation.textContent = `[${index}]`;
+          citation.dataset.index = String(index);
+          citation.disabled = !answer.chunks.has(index);
+          citation.addEventListener("click", () => showChunk(index, answer.chunks));
+          answer.appendChild(citation);
+        });
 
         cursor = match.index + match[0].length;
       }
