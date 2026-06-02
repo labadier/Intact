@@ -1,0 +1,17 @@
+.git/
+.github/
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+report.xml
+.DS_Store
+.codex/
+.dvc/cache/
+.dvc/tmp/
+data/
