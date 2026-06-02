@@ -1,18 +1,18 @@
 import json
-import os
 import shutil
 from pathlib import Path
+from typing import Any
 
 import dvc.api
+import torch
 from fire import Fire
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 
-import torch
 
-
-def load_chunks(chunks_path: Path) -> list[dict]:
+def load_chunks(chunks_path: Path) -> list[dict[str, Any]]:
+    """Load extracted document chunks from JSON."""
     with chunks_path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -24,7 +24,6 @@ def build_index(
     recreate: bool = True,
 ) -> str:
     """Create a text-only Chroma index from a chunks.json file."""
-
     chunks_path = Path(chunks_path)
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -45,9 +44,15 @@ def build_index(
     embedding_function = HuggingFaceEmbeddings(
         model_name=params["models"]["search"]["name"],
         multi_process=True,
-        show_progress= True,
-        query_encode_kwargs={"normalize_embeddings": True, "prompt_name": params["models"]["search"]["prompts"]["query"]},
-        encode_kwargs={"normalize_embeddings": True, "prompt_name": params["models"]["search"]["prompts"]["chunk"]},
+        show_progress=True,
+        query_encode_kwargs={
+            "normalize_embeddings": True,
+            "prompt_name": params["models"]["search"]["prompts"]["query"],
+        },
+        encode_kwargs={
+            "normalize_embeddings": True,
+            "prompt_name": params["models"]["search"]["prompts"]["chunk"],
+        },
         model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
     )
 

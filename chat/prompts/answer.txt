@@ -8,20 +8,21 @@ Rules:
 - Do not infer compliance from incomplete evidence.
 - If evidence is incomplete, state that it is incomplete.
 - If evidence is contradictory, describe the contradiction.
-- If the answer cannot be determined from the context, return "Insufficient evidence".
+- Prefer reporting facts rather than making compliance conclusions.
+- Do not state that a requirement is met unless the evidence explicitly demonstrates it.
 - Every statement derived from the context must include inline citations using the format <doc1>, <doc2>, etc.
 - Citations must be placed at the end of the sentence they support.
 - Use only the document identifiers provided in the context.
+
+If the context does not contain sufficient information to answer the question, output exactly: Based on the information provided, I cannot answer that question.
+
+Assessment:
+Insufficient Evidence
 
 Output:
 
 Answer:
 <answer with inline citations>
-
-Evidence:
-1. <doc1> <summary of relevant evidence>
-2. <doc2> <summary of relevant evidence>
-3. <doc3> <summary of relevant evidence>
 
 Assessment:
 Supported | Partially Supported | Not Supported | Contradictory Evidence | Insufficient Evidence

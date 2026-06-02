@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any, AsyncIterator
 
@@ -6,26 +7,22 @@ import yaml
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
-
-
 from openai import AsyncOpenAI
-
-import os
 
 
 class ChatManager:
+    """Coordinate retrieval and OpenAI-compatible streamed generation."""
 
     def __init__(
         self,
-        prompts_dir: str,
+        prompts_dir: Path,
         index_path: str,
         collection_name: str,
         openai_api_key: str = os.environ.get("OPENAI_API_KEY", ""),
         openai_api_base: str = os.environ.get("OPENAI_API_BASE", "https://api.mistral.ai/v1"),
         llm_model_name: str = os.environ.get("OPENAI_MODEL", ""),
     ) -> None:
-        
-        
+        """Initialize prompts, LLM client, and retriever."""
         self.system_prompt = (prompts_dir / "answer.txt").read_text()
 
         self.llm_model_name = llm_model_name
@@ -41,16 +38,17 @@ class ChatManager:
         )
 
     def retrieve(self, question: str) -> list[dict[str, Any]]:
+        """Return serialized chunks retrieved for a question."""
         docs = self.retriever.invoke(question)
         return [serialize_doc(doc, index=index) for index, doc in enumerate(docs, start=1)]
-
 
     def load_retriever(
         self,
         retrieved_chunks: int,
         index_path: str,
         collection_name: str,
-    ):
+    ) -> object:
+        """Load a Chroma retriever using the configured embedding model."""
         params_path = Path("params.yaml")
         with params_path.open("r", encoding="utf-8") as params_file:
             params = yaml.safe_load(params_file)
@@ -74,10 +72,14 @@ class ChatManager:
 
         return vectorstore.as_retriever(search_kwargs={"k": retrieved_chunks})
 
-
-    async def stream_answer(self, question: str) -> AsyncIterator[str]:
+    async def stream_answer(self, question: str) -> AsyncIterator[dict[str, Any]]:
+        """Stream answer deltas and then emit retrieved chunks."""
         docs = self.retriever.invoke(question)
         context = collate_docs(docs)
+
+        generation_prefix = "Answer:"
+        prefix_buffer = ""
+        prefix_checked = False
 
         stream = await self.llm.chat.completions.create(
             model=self.llm_model_name,
@@ -87,17 +89,47 @@ class ChatManager:
                     "role": "user",
                     "content": f"Context:\n{context}\n\nQuestion:\n{question}",
                 },
+                {"role": "assistant", "content": generation_prefix, "prefix": True},
             ],
             stream=True,
         )
 
         async for chunk in stream:
             delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta
+            if not delta:
+                continue
+
+            if prefix_checked:
+                yield {"type": "answer_delta", "content": delta}
+                continue
+
+            prefix_buffer += delta
+            candidate = prefix_buffer.lstrip()
+
+            if candidate.startswith(generation_prefix):
+                prefix_checked = True
+                remainder = candidate[len(generation_prefix) :].lstrip()
+                if remainder:
+                    yield {"type": "answer_delta", "content": remainder}
+                continue
+
+            if generation_prefix.startswith(candidate):
+                continue
+
+            prefix_checked = True
+            yield {"type": "answer_delta", "content": prefix_buffer}
+
+        if prefix_buffer and not prefix_checked:
+            yield {"type": "answer_delta", "content": prefix_buffer}
+
+        yield {
+            "type": "chunks",
+            "chunks": [serialize_doc(doc, index=index) for index, doc in enumerate(docs, start=1)],
+        }
 
 
 def collate_docs(docs: list[Document]) -> str:
+    """Format retrieved documents as prompt context."""
     chunks = []
     for index, doc in enumerate(docs, start=1):
         source = doc.metadata.get("document", "unknown")
@@ -107,6 +139,7 @@ def collate_docs(docs: list[Document]) -> str:
 
 
 def serialize_doc(doc: Document, index: int) -> dict[str, Any]:
+    """Serialize a retrieved document for API responses."""
     return {
         "index": index,
         "text": doc.page_content,

@@ -1,23 +1,25 @@
-from unstructured.partition.pdf import partition_pdf
-from glob import glob
-from pathlib import Path
-from tqdm import tqdm
-import dotenv
 import json
+from pathlib import Path
+from typing import Any
 
+import dotenv
 from fire import Fire
+from tqdm import tqdm
+from unstructured.partition.pdf import partition_pdf
 
 dotenv.load_dotenv()
 
-def document_parsing(data_path: Path):
+
+def document_parsing(data_path: Path) -> list[dict[str, Any]]:
+    """Parse PDF files into text chunks."""
     chunk_list = []
 
-    for document in tqdm(glob(str(data_path / "*.pdf"))):
+    for document in tqdm(data_path.glob("*.pdf")):
         chunks = partition_pdf(
-            filename=document,
+            filename=str(document),
             languages=["eng"],
             infer_table_structure=False,
-            extract_images_in_pdf = False,
+            extract_images_in_pdf=False,
             # strategy="hi_res",
             # Image extraction disabled for now
             # extract_image_block_types=["Image"],
@@ -39,6 +41,7 @@ def document_parsing(data_path: Path):
 
 
 def main(data_path: str, output_path: str) -> None:
+    """Extract chunks from PDFs and write them to a JSON file."""
     chunks = document_parsing(Path(data_path))
 
     output_path = Path(output_path)
