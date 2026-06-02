@@ -53,7 +53,7 @@ class ChatManager:
         )
 
         self.retriever = self.load_retriever(
-            retrieved_chunks=5,
+            retrieved_chunks=dvc.api.params_show()["models"]["search"]["top_k"],
             index_path=index_path,
             collection_name=collection_name,
         )
@@ -118,10 +118,9 @@ class ChatManager:
             stream = await self.llm.chat.completions.create(
                 model=self.llm_model_name,
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
                     {
                         "role": "user",
-                        "content": f"Context:\n{context}\n\nQuestion:\n{question}",
+                        "content": self.system_prompt.format(question=question, context=context),
                     },
                     {"role": "assistant", "content": generation_prefix, "prefix": True},
                 ],

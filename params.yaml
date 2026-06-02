@@ -5,5 +5,4 @@ models:
       chunk: "document"
       query: "query"
     max_seq_length: 1024
-    m: 12
-    ef_construction: 400
+    top_k: 10

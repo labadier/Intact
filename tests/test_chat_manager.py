@@ -91,7 +91,7 @@ async def test_stream_answer_retrieves_generates_and_emits_chunks():
         Document(page_content="Second evidence", metadata={"document": "b.pdf"}),
     ]
     manager = ChatManager.__new__(ChatManager)
-    manager.system_prompt = "System instructions"
+    manager.system_prompt = "System instructions\n\nContext:\n{context}\n\nQuestion:\n{question}"
     manager.llm_model_name = "test-model"
     manager.retriever = FakeRetriever(docs)
     manager.llm = FakeLLM(["Answer: ", "Supported claim <doc1>", " and more <doc2>"])
@@ -116,10 +116,10 @@ async def test_stream_answer_retrieves_generates_and_emits_chunks():
     assert call["temperature"] == 0
     assert call["stream"] is True
     assert call["messages"] == [
-        {"role": "system", "content": "System instructions"},
         {
             "role": "user",
             "content": (
+                "System instructions\n\n"
                 "Context:\n"
                 "[1] Source: a.pdf\nFirst evidence\n\n"
                 "[2] Source: b.pdf\nSecond evidence\n\n"
