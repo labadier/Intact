@@ -2,11 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -49,7 +47,6 @@ jobs:
     name: DVC status
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    continue-on-error: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,11 +68,15 @@ jobs:
       - name: Configure SSH for DVC remote
         env:
           DVC_SSH_PRIVATE_KEY: ${{ secrets.DVC_SSH_PRIVATE_KEY }}
+          DVC_SSH_PASSPHRASE: ${{ secrets.DVC_SSH_PASSPHRASE }}
           DVC_SSH_KNOWN_HOSTS: ${{ secrets.DVC_SSH_KNOWN_HOSTS }}
           DVC_SSH_HOST: ${{ secrets.DVC_SSH_HOST }}
         run: |
           test -n "$DVC_SSH_PRIVATE_KEY" || (echo "Missing DVC_SSH_PRIVATE_KEY secret"; exit 1)
+
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
           printf '%s\n' "$DVC_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
@@ -87,6 +88,43 @@ jobs:
             echo "Missing DVC_SSH_KNOWN_HOSTS or DVC_SSH_HOST secret"
             exit 1
           fi
+
+          chmod 600 ~/.ssh/known_hosts
+
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+
+          if [ -n "$DVC_SSH_PASSPHRASE" ]; then
+            cat > /tmp/ssh-askpass <<'EOF'
+          #!/bin/sh
+          printf '%s\n' "$DVC_SSH_PASSPHRASE"
+          EOF
+            chmod 700 /tmp/ssh-askpass
+
+            DISPLAY=:0 \
+            SSH_ASKPASS=/tmp/ssh-askpass \
+            SSH_ASKPASS_REQUIRE=force \
+            DVC_SSH_PASSPHRASE="$DVC_SSH_PASSPHRASE" \
+            setsid ssh-add ~/.ssh/id_ed25519 </dev/null
+          else
+            if ssh-keygen -y -P "" -f ~/.ssh/id_ed25519 >/dev/null 2>&1; then
+              ssh-add ~/.ssh/id_ed25519 </dev/null
+            else
+              echo "The DVC SSH key is encrypted, but DVC_SSH_PASSPHRASE is empty."
+              exit 1
+            fi
+          fi
+
+          cat > ~/.ssh/config <<'EOF'
+          Host *
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+          EOF
+
+          chmod 600 ~/.ssh/config
 
       - name: Pull DVC data
         run: uv run dvc pull
