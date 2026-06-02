@@ -77,7 +77,7 @@ class ChatManager:
         docs = self.retriever.invoke(question)
         context = collate_docs(docs)
 
-        generation_prefix = "Answer:"
+        generation_prefix = "Answer: "
         prefix_buffer = ""
         prefix_checked = False
 
@@ -91,6 +91,7 @@ class ChatManager:
                 },
                 {"role": "assistant", "content": generation_prefix, "prefix": True},
             ],
+            temperature=0,
             stream=True,
         )
 

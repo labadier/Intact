@@ -24,12 +24,13 @@ dependencies = [
 [dependency-groups]
 dev = [
     "dvc-ssh>=4.3.0",
+    "pytest>=9.0.3",
     "ruff>=0.15.15",
 ]
 
 [tool.ruff]
 line-length = 100
-include = ["chat/**/*.py", "models/**/*.py", "scripts/**/*.py"]
+include = ["chat/**/*.py", "models/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
 target-version = "py311"
 
 [tool.ruff.lint]
@@ -71,3 +72,6 @@ max-complexity = 14
     "S101",   # Allow asserts
     "ANN201", # Return type annotation
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

@@ -361,7 +361,7 @@
       panel.className = "chunks";
 
       const title = document.createElement("h2");
-      title.textContent = "Retrieved chunks";
+      title.textContent = "Supportive Information";
       panel.appendChild(title);
 
       chunks.forEach((chunk) => {
@@ -370,7 +370,7 @@
         item.className = "chunk";
         item.type = "button";
         item.textContent = `#${chunk.index} ${source}`;
-        item.setAttribute("aria-label", `Retrieved chunk ${chunk.index} from ${source}`);
+        item.setAttribute("aria-label", `Supportive Information ${chunk.index} from ${source}`);
         item.addEventListener("click", () => showChunk(Number(chunk.index), answer.chunks));
         panel.appendChild(item);
       });
@@ -381,6 +381,12 @@
 
     function handleEvent(eventName, payload, answer) {
       if (eventName === "answer_delta") {
+        if (!answer.dataset.started) {
+          answer.dataset.started = "true";
+          answer.dataset.rawText = "";
+          status.textContent = "Streaming";
+        }
+
         answer.dataset.rawText = `${answer.dataset.rawText || ""}${payload.content || ""}`;
         renderAnswer(answer, answer.dataset.rawText);
       }
@@ -411,7 +417,7 @@
     function setBusy(isBusy) {
       send.disabled = isBusy;
       input.disabled = isBusy;
-      status.textContent = isBusy ? "Streaming" : "Ready";
+      status.textContent = isBusy ? "Working" : "Ready";
     }
 
     form.addEventListener("submit", async (event) => {
@@ -425,8 +431,9 @@
 
       addMessage(question, "user");
       input.value = "";
-      const answer = addMessage("", "assistant");
+      const answer = addMessage("Retrieving information from the data base...", "assistant");
       setBusy(true);
+      status.textContent = "Retrieving";
 
       try {
         const response = await fetch("/chat", {

@@ -24,9 +24,6 @@ Output:
 Answer:
 <answer with inline citations>
 
-Assessment:
-Supported | Partially Supported | Not Supported | Contradictory Evidence | Insufficient Evidence
-
 Context:
 {context}
 
