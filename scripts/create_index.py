@@ -17,7 +17,6 @@ def load_chunks(chunks_path: Path) -> list[dict]:
         return json.load(f)
 
 
-
 def build_index(
     chunks_path: str,
     output_path: str,
