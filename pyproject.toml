@@ -25,6 +25,7 @@ dependencies = [
 dev = [
     "dvc-ssh>=4.3.0",
     "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.15",
 ]
 

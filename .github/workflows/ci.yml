@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_CACHE_DIR: .uv-cache
+  UV_LINK_MODE: copy
+  CUDA_VISIBLE_DEVICES: "-1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Check formatting
+        run: uv run ruff format --check --diff .
+
+      - name: Run Ruff
+        run: uv run ruff check .
+
+  dvc:
+    name: DVC status
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Check DVC status
+        run: |
+          uv run dvc status > dvc_status.txt
+          grep -q "Data and pipelines are up to date." dvc_status.txt || (cat dvc_status.txt; exit 1)
+
+      - name: Upload DVC status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dvc-status
+          path: dvc_status.txt
+          retention-days: 7
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Run tests
+        run: >
+          uv run python -m pytest
+          --maxfail=1
+          --cov=chat
+          --cov=models
+          --cov=scripts
+          --junitxml=report.xml
+          tests/
+          -rxXs
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-report
+          path: report.xml
+          retention-days: 7

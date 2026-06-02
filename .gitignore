@@ -5,6 +5,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+report.xml
 .DS_Store
 
 # DVC internals (keep .dvc/config tracked)
