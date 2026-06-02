@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from models.chat_manager import ChatGenerationError, ChatManagerError, ChatRetrievalError
+
 router = APIRouter()
 
 
@@ -13,6 +15,20 @@ class RetrievalRequest(BaseModel):
     """Request body for retrieval and chat endpoints."""
 
     question: str
+
+
+def validate_question(question: str) -> str:
+    """Normalize and validate a question string."""
+    normalized = question.strip()
+    if not normalized:
+        raise HTTPException(status_code=400, detail="question must not be empty")
+    return normalized
+
+
+def service_error_response(exc: ChatManagerError) -> HTTPException:
+    """Map chat service errors to API errors."""
+    status_code = 503 if isinstance(exc, ChatRetrievalError) else 500
+    return HTTPException(status_code=status_code, detail=str(exc))
 
 
 @router.get("/")
@@ -31,27 +47,29 @@ async def health() -> dict[str, str]:
 @router.post("/retrieve")
 async def retrieve(payload: RetrievalRequest, request: Request) -> dict[str, Any]:
     """Return retrieved chunks for a question."""
-    question = payload.question.strip()
-    if not question:
-        raise HTTPException(status_code=400, detail="question must not be empty")
-
+    question = validate_question(payload.question)
     chat_manager = request.app.state.chat_manager
-    return {"question": question, "chunks": chat_manager.retrieve(question)}
+    try:
+        return {"question": question, "chunks": chat_manager.retrieve(question)}
+    except ChatManagerError as exc:
+        raise service_error_response(exc) from exc
 
 
 @router.post("/chat")
 async def chat(payload: RetrievalRequest, request: Request) -> StreamingResponse:
     """Stream an answer and finish with retrieved chunks as SSE events."""
-    question = payload.question.strip()
-    if not question:
-        raise HTTPException(status_code=400, detail="question must not be empty")
-
+    question = validate_question(payload.question)
     chat_manager = request.app.state.chat_manager
 
     async def event_stream() -> AsyncIterator[str]:
-        async for event in chat_manager.stream_answer(question):
+        try:
+            async for event in chat_manager.stream_answer(question):
+                data = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+                yield f"event: {event['type']}\ndata: {data}\n\n"
+        except (ChatGenerationError, ChatRetrievalError) as exc:
+            event = {"type": "error", "message": str(exc)}
             data = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
-            yield f"event: {event['type']}\ndata: {data}\n\n"
+            yield f"event: error\ndata: {data}\n\n"
 
     return StreamingResponse(
         event_stream(),

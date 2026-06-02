@@ -2109,6 +2109,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sentence-transformers" },
     { name = "unstructured", extra = ["pdf"] },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -2135,6 +2136,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "sentence-transformers", specifier = ">=5.5.1" },
     { name = "unstructured", extras = ["pdf"], specifier = ">=0.22.31" },
+    { name = "uvicorn", specifier = ">=0.48.0" },
 ]
 
 [package.metadata.requires-dev]

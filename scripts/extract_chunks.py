@@ -12,6 +12,14 @@ dotenv.load_dotenv()
 
 def document_parsing(data_path: Path) -> list[dict[str, Any]]:
     """Parse PDF files into text chunks."""
+    if not data_path.exists():
+        msg = f"Data path not found: {data_path}"
+        raise FileNotFoundError(msg)
+
+    if not data_path.is_dir():
+        msg = f"Data path must be a directory: {data_path}"
+        raise NotADirectoryError(msg)
+
     chunk_list = []
 
     for document in tqdm(data_path.glob("*.pdf")):

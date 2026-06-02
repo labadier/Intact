@@ -82,6 +82,29 @@
       color: #171717;
     }
 
+    .searching {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #7a8493;
+      font-weight: 500;
+    }
+
+    .loader {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #cfd6df;
+      border-top-color: #7a8493;
+      border-radius: 50%;
+      animation: spin 800ms linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .citation {
       min-width: 0;
       margin: 0 2px;
@@ -274,6 +297,21 @@
       return node;
     }
 
+    function addSearchingMessage() {
+      const node = addMessage("", "assistant");
+      const label = document.createElement("span");
+      const loader = document.createElement("span");
+
+      label.className = "searching";
+      loader.className = "loader";
+      loader.setAttribute("aria-hidden", "true");
+      label.textContent = "Searching data";
+      label.appendChild(loader);
+      node.appendChild(label);
+
+      return node;
+    }
+
     function renderAnswer(answer, text) {
       answer.textContent = "";
       const citationPattern = /<doc(\d+)>/g;
@@ -361,7 +399,7 @@
       panel.className = "chunks";
 
       const title = document.createElement("h2");
-      title.textContent = "Supportive Information";
+      title.textContent = "Supporting Information";
       panel.appendChild(title);
 
       chunks.forEach((chunk) => {
@@ -370,7 +408,7 @@
         item.className = "chunk";
         item.type = "button";
         item.textContent = `#${chunk.index} ${source}`;
-        item.setAttribute("aria-label", `Supportive Information ${chunk.index} from ${source}`);
+        item.setAttribute("aria-label", `Supporting Information ${chunk.index} from ${source}`);
         item.addEventListener("click", () => showChunk(Number(chunk.index), answer.chunks));
         panel.appendChild(item);
       });
@@ -393,6 +431,11 @@
 
       if (eventName === "chunks") {
         addChunks(payload.chunks || [], answer);
+      }
+
+      if (eventName === "error") {
+        answer.textContent = `Error: ${payload.message || "The response stream failed."}`;
+        status.textContent = "Error";
       }
 
       messages.scrollTop = messages.scrollHeight;
@@ -431,9 +474,9 @@
 
       addMessage(question, "user");
       input.value = "";
-      const answer = addMessage("Retrieving information from the data base...", "assistant");
+      const answer = addSearchingMessage();
       setBusy(true);
-      status.textContent = "Retrieving";
+      status.textContent = "Searching";
 
       try {
         const response = await fetch("/chat", {

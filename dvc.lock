@@ -12,8 +12,8 @@ stages:
       nfiles: 2
     - path: scripts/extract_chunks.py
       hash: md5
-      md5: db376ae6e137f20c69e3dd80ceab7680
-      size: 1595
+      md5: 2a57927f8e4392739a98fbedc68acf20
+      size: 1976
     outs:
     - path: output/co1/chunks.json
       hash: md5
@@ -31,8 +31,8 @@ stages:
       nfiles: 1
     - path: scripts/extract_chunks.py
       hash: md5
-      md5: db376ae6e137f20c69e3dd80ceab7680
-      size: 1595
+      md5: 2a57927f8e4392739a98fbedc68acf20
+      size: 1976
     outs:
     - path: output/co2/chunks.json
       hash: md5
@@ -49,12 +49,12 @@ stages:
       size: 100393
     - path: scripts/create_index.py
       hash: md5
-      md5: 803feb2fb92532da58002d98bbe81d32
-      size: 1968
+      md5: 760e3ff86cf6e399e5b532f6a07d3cff
+      size: 2396
     outs:
     - path: output/co1/index
       hash: md5
-      md5: ef5b631c781041264b7b1467574d49b0.dir
+      md5: 076a5b3ec7efc3c1ed95a8ec3a922ab0.dir
       size: 1714340
       nfiles: 5
   create-index-c2:
@@ -68,11 +68,11 @@ stages:
       size: 38713
     - path: scripts/create_index.py
       hash: md5
-      md5: 803feb2fb92532da58002d98bbe81d32
-      size: 1968
+      md5: 760e3ff86cf6e399e5b532f6a07d3cff
+      size: 2396
     outs:
     - path: output/co2/index
       hash: md5
-      md5: e7fe4f8467dc8e99b391a5af855c0577.dir
+      md5: 29610381f919b5ca8916031dd37f930c.dir
       size: 1067172
       nfiles: 5

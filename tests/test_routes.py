@@ -1,13 +1,20 @@
-from typing import Any, AsyncIterator
+from typing import AsyncIterator, Protocol
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from chat.api.routes import router
+from models.chat_manager import ChatGenerationError, ChatRetrievalError
+
+
+class ChatManagerProtocol(Protocol):
+    def retrieve(self, question: str) -> list[dict[str, object]]: ...
+
+    async def stream_answer(self, question: str) -> AsyncIterator[dict[str, object]]: ...
 
 
 class FakeChatManager:
-    def retrieve(self, question: str) -> list[dict[str, Any]]:
+    def retrieve(self, question: str) -> list[dict[str, object]]:
         return [
             {
                 "index": 1,
@@ -16,14 +23,25 @@ class FakeChatManager:
             }
         ]
 
-    async def stream_answer(self, question: str) -> AsyncIterator[dict[str, Any]]:
+    async def stream_answer(self, question: str) -> AsyncIterator[dict[str, object]]:
         yield {"type": "answer_delta", "content": f"Answer for {question}"}
         yield {"type": "chunks", "chunks": self.retrieve(question)}
 
 
-def make_client() -> TestClient:
+class FailingRetrievalManager(FakeChatManager):
+    def retrieve(self, question: str) -> list[dict[str, object]]:
+        raise ChatRetrievalError("Retrieval backend unavailable.")
+
+
+class FailingStreamManager(FakeChatManager):
+    async def stream_answer(self, question: str) -> AsyncIterator[dict[str, object]]:
+        yield {"type": "answer_delta", "content": "partial"}
+        raise ChatGenerationError("LLM stream failed.")
+
+
+def make_client(chat_manager: ChatManagerProtocol | None = None) -> TestClient:
     app = FastAPI()
-    app.state.chat_manager = FakeChatManager()
+    app.state.chat_manager = chat_manager or FakeChatManager()
     app.include_router(router)
     return TestClient(app)
 
@@ -64,6 +82,15 @@ def test_retrieve_returns_chunks():
     }
 
 
+def test_retrieve_maps_retrieval_errors_to_service_unavailable():
+    client = make_client(FailingRetrievalManager())
+
+    response = client.post("/retrieve", json={"question": "policy"})
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Retrieval backend unavailable."
+
+
 def test_chat_streams_answer_and_chunks_as_sse():
     client = make_client()
 
@@ -76,3 +103,14 @@ def test_chat_streams_answer_and_chunks_as_sse():
         'event: answer_delta\ndata: {"type":"answer_delta","content":"Answer for policy"}' in body
     )
     assert 'event: chunks\ndata: {"type":"chunks","chunks":' in body
+
+
+def test_chat_streams_error_event_when_generation_fails():
+    client = make_client(FailingStreamManager())
+
+    with client.stream("POST", "/chat", json={"question": "policy"}) as response:
+        body = response.read().decode()
+
+    assert response.status_code == 200
+    assert 'event: answer_delta\ndata: {"type":"answer_delta","content":"partial"}' in body
+    assert 'event: error\ndata: {"type":"error","message":"LLM stream failed."}' in body

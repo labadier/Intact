@@ -13,6 +13,10 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 def load_chunks(chunks_path: Path) -> list[dict[str, Any]]:
     """Load extracted document chunks from JSON."""
+    if not chunks_path.exists():
+        msg = f"Chunks file not found: {chunks_path}"
+        raise FileNotFoundError(msg)
+
     with chunks_path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -26,6 +30,10 @@ def build_index(
     """Create a text-only Chroma index from a chunks.json file."""
     chunks_path = Path(chunks_path)
     output_path = Path(output_path)
+    if output_path.exists() and not output_path.is_dir():
+        msg = f"Output path must be a directory: {output_path}"
+        raise NotADirectoryError(msg)
+
     output_path.mkdir(parents=True, exist_ok=True)
 
     if recreate and any(output_path.iterdir()):
